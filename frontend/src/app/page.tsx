@@ -1,0 +1,14 @@
+"use client";
+import { useEffect, useState } from 'react';
+import { api } from '../lib/api';
+export default function Home(){
+ const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[logged,setLogged]=useState(false),[items,setItems]=useState<any[]>([]),[active,setActive]=useState<number|null>(null),[messages,setMessages]=useState<any[]>([]),[text,setText]=useState(''),[error,setError]=useState('');
+ async function auth(mode:'login'|'register'){try{setError('');const r=await api(`/auth/${mode}`,{method:'POST',body:JSON.stringify({email,password})});localStorage.setItem('assistant_token',r.access_token);setLogged(true);await load();}catch(e:any){setError(e.message)}}
+ async function load(){try{setItems(await api('/conversations'));}catch(e:any){setError(e.message);}}
+ useEffect(()=>{if(localStorage.getItem('assistant_token')){setLogged(true);load().catch(()=>{});}},[]);
+ async function create(){const c=await api('/conversations',{method:'POST',body:JSON.stringify({title:'New conversation'})});await load();setActive(c.id);setMessages([])}
+ async function open(id:number){setActive(id);setMessages(await api(`/conversations/${id}/messages`));}
+ async function send(){if(!active||!text.trim())return;const q=text;setText('');setMessages(m=>[...m,{role:'user',content:q}]);try{const r=await api(`/conversations/${active}/messages`,{method:'POST',body:JSON.stringify({content:q})});setMessages(m=>[...m,r]);}catch(e:any){setError(e.message)}}
+ function logout(){localStorage.removeItem('assistant_token');setLogged(false);setItems([]);setMessages([]);setActive(null)}
+ return <main>{!logged?<section className="auth"><h1>AI Assistant</h1><p>Sign in or create an account.</p><input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/><input placeholder="Password (12+ characters)" type="password" value={password} onChange={e=>setPassword(e.target.value)}/><div className="actions"><button onClick={()=>auth('login')}>Log in</button><button className="secondary" onClick={()=>auth('register')}>Create account</button></div>{error&&<p className="error">{error}</p>}</section>:<section className="app"><aside><h2>Conversations</h2><button onClick={create}>New conversation</button>{items.map(c=><button className="conversation" key={c.id} onClick={()=>open(c.id)}>{c.title}</button>)}<button className="secondary" onClick={logout}>Log out</button></aside><article><h1>AI Assistant</h1><div className="messages">{messages.map((m,i)=><div className={`message ${m.role}`} key={i}><b>{m.role}</b><p>{m.content}</p></div>)}</div><div className="composer"><textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Ask a question..."/><button onClick={send} disabled={!active}>Send</button></div>{error&&<p className="error">{error}</p>}</article></section>}</main>
+}

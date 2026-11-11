@@ -1,0 +1,15 @@
+# Secrets and local state
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.db
+*.sqlite*
+node_modules/
+.next/
+dist/
+build/
